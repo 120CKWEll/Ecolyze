@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Setup
+
+1. **Supabase** (จำเป็น): สร้างโปรเจกต์ฟรีที่ [supabase.com](https://supabase.com) แล้วคัดลอก `Project URL` และ `anon public key` จาก **Project Settings → API**
+2. **Gemini API key** (จำเป็นสำหรับฟีเจอร์สแกนขยะ): สร้างฟรีที่ [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+3. คัดลอก `.env.example` ไปเป็น `.env.local` แล้วกรอกค่าทั้ง 3 ตัวด้านบน
+4. เปิดไฟล์ `supabase/schema.sql` ใน **Supabase Dashboard → SQL Editor** แล้วกด Run เพื่อสร้างตาราง `profiles`, `scan_history`, trigger และ RLS
+5. (แนะนำ) ที่ **Authentication → Providers → Email** ปิด **Confirm email** เพื่อให้สมัครแล้วล็อกอินได้ทันที
+
 ## Getting Started
 
 First, run the development server:
