@@ -1,0 +1,28 @@
+{
+  "name": "ecolyze-backend",
+  "version": "1.0.0",
+  "description": "Backend API Server for Ecolyze (RecycleSmart) Waste Management Platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["ecolyze", "recyclesmart", "waste-management", "express", "gemini-ai", "supabase"],
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^20.19.37",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}
