@@ -1,0 +1,111 @@
+"use client";
+import React, { useState } from "react";
+
+interface Guideline {
+  id: number;
+  category: "ทั่วไป" | "รีไซเคิล" | "เปียก" | "อันตราย";
+  binTitle: string;
+  points: number;
+  badgeColor: string;
+  examples: string[];
+  tips: string;
+}
+
+export default function AdminGuidelinesPage() {
+  const [guidelines] = useState<Guideline[]>([
+    {
+      id: 1,
+      category: "ทั่วไป",
+      binTitle: "ขยะทั่วไป (ถังสีน้ำเงิน)",
+      points: 2,
+      badgeColor: "bg-amber-950/60 text-amber-400 border-amber-800/40",
+      examples: ["ซองขนมขบเคี้ยวฟอยล์", "ถุงพลาสติกเปื้อนแกง", "กระดาษทิชชู่ใช้แล้ว", "กล่องโฟมเปื้อนอาหาร"],
+      tips: "ขยะที่ย่อยสลายยากและไม่คุ้มค่าต่อการรีไซเคิล",
+    },
+    {
+      id: 2,
+      category: "รีไซเคิล",
+      binTitle: "ขยะรีไซเคิล (ถังสีเหลือง)",
+      points: 5,
+      badgeColor: "bg-blue-950/60 text-blue-400 border-blue-800/40",
+      examples: ["ขวดพลาสติก PET ใส", "กระป๋องอะลูมิเนียม", "ขวดแก้ว", "กระดาษและกล่องลัง"],
+      tips: "เทของเหลวออกให้หมด บีบให้แบนเพื่อประหยัดพื้นที่",
+    },
+    {
+      id: 3,
+      category: "เปียก",
+      binTitle: "ขยะเปียก / อินทรีย์ (ถังสีเขียว)",
+      points: 2,
+      badgeColor: "bg-emerald-950/60 text-emerald-400 border-emerald-800/40",
+      examples: ["เศษอาหาร", "เปลือกผลไม้", "กากกาแฟ", "เศษใบไม้และผัก"],
+      tips: "รินน้ำแกงออกก่อนทิ้ง นำไปหมักทำปุ๋ยชีวภาพได้",
+    },
+    {
+      id: 4,
+      category: "อันตราย",
+      binTitle: "ขยะอันตราย / E-Waste (ถังสีแดง/ส้ม)",
+      points: 10,
+      badgeColor: "bg-rose-950/60 text-rose-400 border-rose-800/40",
+      examples: ["ถ่านไฟฉาย แบตเตอรี่", "หลอดไฟฟลูออเรสเซนต์", "กระป๋องสเปรย์", "ขวดยาหมดอายุ"],
+      tips: "แยกใส่ถุงมิดชิด ห้ามทิ้งรวมกับขยะประเภทอื่นเด็ดขาด",
+    },
+  ]);
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+        <div>
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <span>📘</span> ฐานความรู้ & คู่มือแยกขยะ 4 หมวดหมู่
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            มาตรฐานกรมควบคุมมลพิษ และเกณฑ์การให้คะแนนสำหรับโมเดล Google Gemini AI
+          </p>
+        </div>
+      </div>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {guidelines.map((item) => (
+          <div
+            key={item.id}
+            className="bg-slate-900/80 backdrop-blur-md border border-slate-800/80 rounded-3xl p-6 shadow-xl flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-lg font-bold text-white">{item.binTitle}</h3>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${item.badgeColor}`}>
+                  +{item.points} แต้ม/ชิ้น
+                </span>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-xs font-bold text-slate-400 mb-2">ตัวอย่างขยะในหมวดนี้:</p>
+                <div className="flex flex-wrap gap-2">
+                  {item.examples.map((ex, i) => (
+                    <span
+                      key={i}
+                      className="bg-slate-800 text-slate-200 px-3 py-1 rounded-xl text-xs font-medium border border-slate-700/50"
+                    >
+                      • {ex}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-850 border border-slate-800 text-xs text-slate-300">
+                <span className="font-bold text-emerald-400">💡 เคล็ดลับการจัดการ:</span> {item.tips}
+              </div>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+              <span>สถานะ AI System Prompt:</span>
+              <span className="text-emerald-400 font-bold">✓ Active in Gemini 2.5</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
