@@ -69,38 +69,38 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <span>📋</span> จัดการรายงานปัญหา & ถังขยะเต็ม
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1">
             ติดตามและแก้ไขปัญหาที่ได้รับแจ้งจากนักศึกษาและบุคลากรใน มข.
           </p>
         </div>
 
         {/* Filter buttons */}
-        <div className="bg-slate-900 border border-slate-800 p-1 rounded-xl flex items-center gap-1 text-xs font-bold self-start sm:self-auto">
+        <div className="bg-white border border-slate-200 p-1 rounded-xl flex items-center gap-1 text-xs font-bold self-start sm:self-auto shadow-sm">
           <button
             onClick={() => setFilter("all")}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              filter === "all" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-slate-200"
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+              filter === "all" ? "bg-emerald-600 text-white shadow-sm font-bold" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
             ทั้งหมด ({reports.length})
           </button>
           <button
             onClick={() => setFilter("Pending")}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              filter === "Pending" ? "bg-amber-600 text-white" : "text-slate-400 hover:text-slate-200"
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+              filter === "Pending" ? "bg-amber-500 text-white shadow-sm font-bold" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
             รอดำเนินการ ({reports.filter((r) => r.status === "Pending").length})
           </button>
           <button
             onClick={() => setFilter("Resolved")}
-            className={`px-3 py-1.5 rounded-lg transition ${
-              filter === "Resolved" ? "bg-emerald-700 text-white" : "text-slate-400 hover:text-slate-200"
+            className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+              filter === "Resolved" ? "bg-emerald-600 text-white shadow-sm font-bold" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
             แก้ไขแล้ว
@@ -109,11 +109,11 @@ export default function AdminReportsPage() {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800/80 rounded-3xl overflow-hidden shadow-xl">
+      <div className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-850/60 text-slate-400 font-bold">
+              <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-bold">
                 <th className="py-4 px-5">รหัสรายงาน</th>
                 <th className="py-4 px-5">วันที่แจ้ง</th>
                 <th className="py-4 px-5">สถานที่เกิดเหตุ</th>
@@ -122,24 +122,24 @@ export default function AdminReportsPage() {
                 <th className="py-4 px-5 text-center">การดำเนินการ</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-slate-100">
               {filteredReports.map((report) => (
-                <tr key={report.id} className="hover:bg-slate-800/40 transition-colors">
-                  <td className="py-4 px-5 font-mono text-slate-400 font-bold">{report.id}</td>
-                  <td className="py-4 px-5 text-slate-300">{report.date}</td>
-                  <td className="py-4 px-5 font-bold text-slate-100">{report.location}</td>
-                  <td className="py-4 px-5 text-slate-300 font-medium">{report.issue}</td>
+                <tr key={report.id} className="hover:bg-emerald-50/30 transition-colors">
+                  <td className="py-4 px-5 font-mono text-slate-500 font-bold">{report.id}</td>
+                  <td className="py-4 px-5 text-slate-500">{report.date}</td>
+                  <td className="py-4 px-5 font-bold text-slate-800">{report.location}</td>
+                  <td className="py-4 px-5 text-slate-700 font-medium">{report.issue}</td>
                   <td className="py-4 px-5">
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                         report.status === "Pending"
-                          ? "bg-amber-950/60 text-amber-400 border-amber-800/40"
-                          : "bg-emerald-950/60 text-emerald-400 border-emerald-800/40"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200"
                       }`}
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full ${
-                          report.status === "Pending" ? "bg-amber-400" : "bg-emerald-400"
+                          report.status === "Pending" ? "bg-amber-500" : "bg-emerald-500"
                         }`}
                       ></span>
                       {report.status === "Pending" ? "⏳ รอดำเนินการ" : "✅ แก้ไขแล้ว"}
@@ -149,14 +149,14 @@ export default function AdminReportsPage() {
                     {report.status === "Pending" ? (
                       <button
                         onClick={() => updateStatus(report.id, "Resolved")}
-                        className="bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/50 px-3 py-1 rounded-lg text-xs font-bold transition"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm px-3.5 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer"
                       >
                         ✓ ทำเครื่องหมายแก้ไขแล้ว
                       </button>
                     ) : (
                       <button
                         onClick={() => updateStatus(report.id, "Pending")}
-                        className="text-slate-400 hover:text-slate-200 text-xs font-semibold"
+                        className="text-slate-500 hover:text-slate-800 text-xs font-semibold hover:underline cursor-pointer"
                       >
                         ย้อนสถานะ
                       </button>

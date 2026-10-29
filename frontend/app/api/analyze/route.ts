@@ -25,17 +25,29 @@ const wasteTypeAliases: Record<string, WasteType> = {
   "ขยะอันตราย": "อันตราย",
 };
 
-const PROMPT = `You are an expert in waste management operating under Thailand's Pollution Control Department standards and Khon Kaen University guidelines.
-Analyze the waste item in the image and categorize it strictly into exactly one of these four Thai bins: "รีไซเคิล", "เปียก", "ทั่วไป", or "อันตราย".
-Rules:
-- If a food container is dirty and cannot be easily cleaned, classify it as "ทั่วไป".
-- Tissue paper and food-contaminated packaging are "ทั่วไป".
-- Battery, bulbs, spray cans, and electronics are "อันตราย".
-Return JSON only with these fields:
-- objectName: name of the item in Thai (e.g. "ขวดพลาสติก PET")
-- wasteType: one of the four Thai values above, exactly
-- confidence: integer 0-100 (how sure you are)
-- advice: array of Thai preparation steps (2-5 items, each a short sentence)`;
+const PROMPT = `You are an expert waste verification and categorization AI for Thailand's Pollution Control Department (กรมควบคุมมลพิษ) and Khon Kaen University (KKU) Green Campus.
+
+🎯 Step 1: Waste Detection (การตรวจหาขยะในภาพ):
+Check if there is ANY waste item, recyclable container, bottle, can, food scrap, packaging, box, cup, tissue, battery, or disposable item in the image.
+- 💡 สำคัญมาก (ถ่ายติดมือ/ติดหน้า/ถือขยะ): ผู้ใช้งานมักจะใช้มือจับขวดน้ำ กล่องข้าว ถุงขนม หรือถือขยะขึ้นมาถ่ายรูป ซึ่งอาจจะถ่ายติดมือ นิ้วมือ เสื้อผ้า ใบหน้า หรือพื้นหลังห้อง "ถือเป็นเรื่องปกติและถูกต้อง" -> ให้โฟกัสที่ชิ้นขยะที่ถืออยู่ และตั้งค่า "isWaste": true เสมอ
+- จะตั้งค่า "isWaste": false เฉพาะกรณีที่ "ไม่มีขยะหรือบรรจุภัณฑ์ใดๆ ในภาพเลย" เท่านั้น (เช่น ถ่ายหน้าคน/เซลฟี่เพียวๆ โดยไม่มีขยะ, ถ่ายสัตว์เลี้ยง, ถ่ายวิวทิวทัศน์, ถ่ายเฟอร์นิเจอร์ห้องโดยไม่มีขยะ)
+
+🎯 Step 2: Categorization (เมื่อพบชิ้นขยะในภาพ):
+Categorize the waste item into exactly one of these four Thai bins: "รีไซเคิล", "เปียก", "ทั่วไป", or "อันตราย".
+- ขยะทั่วไป (ถังน้ำเงิน): กล่องโฟม, ซองขนมกรุบกรอบ/ฟอยล์, ทิชชู่ใช้แล้ว, ภาชนะเปื้อนแกง/น้ำมันที่ล้างไม่ออก
+- ขยะรีไซเคิล (ถังเหลือง): ขวดพลาสติก PET ใส (เช่น ขวดน้ำดื่ม), ขวดแก้ว, กระป๋องอะลูมิเนียม, ลังกระดาษ
+- ขยะเปียก/อินทรีย์ (ถังเขียว): เศษอาหาร, ข้าวแกง, เปลือกผลไม้, เศษผัก
+- ขยะอันตราย (ถังแดง): ถ่านไฟฉาย, หลอดไฟ, กระป๋องสเปรย์, ขยะอิเล็กทรอนิกส์ (E-Waste)
+
+Return JSON ONLY with these fields:
+{
+  "isWaste": boolean,
+  "rejectionReason": string (Thai explanation if isWaste is false, e.g. "ไม่พบขยะหรือบรรจุภัณฑ์ในภาพ กรุณาถ่ายภาพขยะที่ต้องการคัดแยก", otherwise empty string),
+  "objectName": string (Thai name of the waste item, e.g. "ขวดพลาสติก PET ใส"),
+  "wasteType": "รีไซเคิล" | "เปียก" | "ทั่วไป" | "อันตราย",
+  "confidence": integer 0-100,
+  "advice": array of 2-4 Thai practical preparation strings (e.g. ["เทน้ำออกให้หมด", "บีบขวดให้แบนก่อนทิ้ง"])
+}`;
 
 function normalizeWasteType(value: unknown): WasteType | null {
   if (typeof value !== "string") return null;
@@ -125,6 +137,23 @@ export async function POST(request: NextRequest) {
     }
 
     const raw = parsed as Record<string, unknown>;
+
+    // 🛑 ตรวจสอบว่าเป็นขยะจริงหรือไม่ (Waste Verification Guardrail)
+    const isWaste = raw.isWaste !== false;
+    const rejectionReason =
+      typeof raw.rejectionReason === "string" && raw.rejectionReason.trim()
+        ? raw.rejectionReason.trim()
+        : "ภาพนี้ไม่ใช่ขยะหรือสิ่งของที่ต้องนำไปทิ้ง";
+
+    if (!isWaste) {
+      return NextResponse.json(
+        {
+          error: `❌ ภาพนี้ไม่ใช่ขยะ: ${rejectionReason} (กรุณาถ่ายภาพขยะหรือสิ่งของที่ต้องการคัดแยกทิ้ง เช่น ขวดน้ำ กล่องข้าว แก้ว เศษอาหาร หรือถุงขนม)`,
+          isWaste: false,
+        },
+        { status: 422 }
+      );
+    }
 
     // ทำความสะอาดค่าที่ได้จาก AI ให้มีรูปแบบที่ระบบรองรับเสมอ
     const wasteType = normalizeWasteType(raw.wasteType);

@@ -117,18 +117,18 @@ export default function AdminLocationsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             <span>📍</span> จัดการจุดทิ้งขยะ & แผนที่ Leaflet
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-500 text-sm mt-1">
             กำหนดพิกัด GPS จุดรับขยะ และประเภทถังขยะที่แสดงบนแผนที่ มข.
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-emerald-950 transition active:scale-95 self-start sm:self-auto"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95 self-start sm:self-auto cursor-pointer"
         >
           <span>➕</span> เพิ่มจุดทิ้งใหม่
         </button>
@@ -139,16 +139,16 @@ export default function AdminLocationsPage() {
         {locations.map((loc) => (
           <div
             key={loc.id}
-            className="bg-slate-900/80 backdrop-blur-md border border-slate-800/80 rounded-2xl p-5 hover:border-slate-700 transition flex flex-col justify-between shadow-xl"
+            className="bg-white border border-slate-200/80 rounded-2xl p-5 hover:border-emerald-300 hover:shadow-md transition flex flex-col justify-between shadow-sm"
           >
             <div>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-950/60 text-emerald-400 border border-emerald-800/40 flex items-center justify-center text-xl shrink-0">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-xl shrink-0">
                     🗑️
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-100 text-base">{loc.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-base">{loc.name}</h3>
                     <p className="text-[11px] font-mono text-slate-400 mt-0.5">
                       Lat: {loc.lat} | Lng: {loc.lng}
                     </p>
@@ -158,21 +158,21 @@ export default function AdminLocationsPage() {
                 <span
                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
                     loc.status === "Active"
-                      ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/40"
-                      : "bg-amber-950/60 text-amber-400 border-amber-800/40"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-amber-50 text-amber-700 border-amber-200"
                   }`}
                 >
                   {loc.status === "Active" ? "🟢 เปิดใช้งาน" : "🛠️ ปิดปรับปรุง"}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400 mb-4">{loc.description}</p>
+              <p className="text-xs text-slate-600 mb-4">{loc.description}</p>
 
               <div className="flex flex-wrap gap-1.5 mb-4">
                 {(loc.type || loc.types || []).map((t, i) => (
                   <span
                     key={i}
-                    className="text-[10px] font-bold bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700/50"
+                    className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200"
                   >
                     {t}
                   </span>
@@ -180,10 +180,10 @@ export default function AdminLocationsPage() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <button
                 onClick={() => toggleStatus(loc.id)}
-                className="text-slate-400 hover:text-slate-200 font-bold transition"
+                className="text-slate-500 hover:text-slate-800 font-bold transition cursor-pointer"
               >
                 สลับสถานะ (เปิด/ปิด)
               </button>
@@ -191,7 +191,7 @@ export default function AdminLocationsPage() {
                 href={`https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-emerald-400 hover:underline font-bold"
+                className="text-emerald-600 hover:text-emerald-700 hover:underline font-bold"
               >
                 ดูบน Google Maps ↗
               </a>
@@ -202,13 +202,13 @@ export default function AdminLocationsPage() {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white">📍 เพิ่มจุดทิ้งขยะใหม่</h3>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900">📍 เพิ่มจุดทิ้งขยะใหม่</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white text-lg"
+                className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
               >
                 ✕
               </button>
@@ -216,46 +216,46 @@ export default function AdminLocationsPage() {
 
             <form onSubmit={handleAddLocation} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 mb-1">ชื่อสถานที่ / อาคาร</label>
+                <label className="block font-bold text-slate-700 mb-1">ชื่อสถานที่ / อาคาร</label>
                 <input
                   type="text"
                   required
                   placeholder="เช่น โรงอาหารคณะศึกษาศาสตร์"
                   value={newLocName}
                   onChange={(e) => setNewLocName(e.target.value)}
-                  className="w-full bg-slate-850 text-white border border-slate-700/70 p-3 rounded-xl focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">ละติจูด (Lat)</label>
+                  <label className="block font-bold text-slate-700 mb-1">ละติจูด (Lat)</label>
                   <input
                     type="text"
                     value={newLat}
                     onChange={(e) => setNewLat(e.target.value)}
-                    className="w-full bg-slate-850 text-white border border-slate-700/70 p-3 rounded-xl focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">ลองจิจูด (Lng)</label>
+                  <label className="block font-bold text-slate-700 mb-1">ลองจิจูด (Lng)</label>
                   <input
                     type="text"
                     value={newLng}
                     onChange={(e) => setNewLng(e.target.value)}
-                    className="w-full bg-slate-850 text-white border border-slate-700/70 p-3 rounded-xl focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 mb-1">คำอธิบายจุดตั้งถัง</label>
+                <label className="block font-bold text-slate-700 mb-1">คำอธิบายจุดตั้งถัง</label>
                 <textarea
                   rows={2}
                   placeholder="เช่น บริเวณบันไดทางขึ้นชั้น 1"
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full bg-slate-850 text-white border border-slate-700/70 p-3 rounded-xl focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
 
@@ -263,13 +263,13 @@ export default function AdminLocationsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-750 transition"
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200/80 transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-lg shadow-emerald-950"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-md shadow-emerald-600/20 cursor-pointer"
                 >
                   บันทึกข้อมูล
                 </button>
