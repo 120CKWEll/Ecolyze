@@ -1,26 +1,32 @@
 import './globals.css';
 import { ReactNode } from 'react';
-import ClientLayout from './components/ClientLayout'; // ดึง Layout ตัวใหม่มาใช้
+import { Kanit } from 'next/font/google';
+import ClientLayout from './components/ClientLayout';
+
+const kanit = Kanit({
+  weight: ['300', '400', '500', '600', '700', '800'],
+  subsets: ['thai', 'latin'],
+  display: 'swap',
+  variable: '--font-kanit',
+});
 
 export const metadata = {
   title: 'RecycleSmart - ระบบแยกขยะอัจฉริยะ',
-  description: 'KKU Green University',
+  description: 'KKU Green University - ระบบวิเคราะห์การแยกขยะและสะสมแต้มอัจฉริยะ',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="th" data-scroll-behavior="smooth">
+    <html lang="th" className={`${kanit.variable} ${kanit.className}`}>
       <head>
+        <link rel="preconnect" href="https://unpkg.com" />
+        <link rel="dns-prefetch" href="https://unpkg.com" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body className="bg-gray-50 flex flex-col md:flex-row h-screen overflow-hidden text-gray-800 font-sans selection:bg-emerald-200">
-        
-        {/* ให้ ClientLayout จัดการเรื่องการซ่อน/แสดงเมนูให้ทั้งหมด */}
+      <body className="bg-slate-50/80 flex flex-col md:flex-row h-screen overflow-hidden text-slate-800 font-sans selection:bg-emerald-200 antialiased">
         <ClientLayout>
           {children}
         </ClientLayout>
-
       </body>
     </html>
   );
