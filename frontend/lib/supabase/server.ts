@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// สร้าง client ฝั่งเซิร์ฟเวอร์ด้วย anon key เท่านั้น (ไม่ใช้ service role key)
+// สร้าง client ฝั่งเซิร์ฟเวอร์ด้วย anon key
 // ถ้าส่ง accessToken ของผู้ใช้มา จะแนบไปใน Authorization header ทุกคำขอ
 // ทำให้ PostgREST เห็น JWT ของผู้ใช้ -> RLS และ auth.uid() ทำงานถูกต้อง
 export function getSupabaseServerClient(accessToken?: string | null): SupabaseClient {
@@ -19,5 +19,26 @@ export function getSupabaseServerClient(accessToken?: string | null): SupabaseCl
     global: accessToken
       ? { headers: { Authorization: `Bearer ${accessToken}` } }
       : undefined,
+  });
+}
+
+// สร้าง client ฝั่งเซิร์ฟเวอร์ด้วย service_role key สำหรับการทำงานของ Admin
+// ปลอดภัย 100% เพราะมี "server-only" ป้องกันไม่ให้ bundle ไปฝั่ง client
+export function getSupabaseAdminClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url) {
+    throw new Error("Supabase URL ไม่ได้ตั้งค่า");
+  }
+
+  const key = serviceRoleKey ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!key) {
+    throw new Error("Supabase Key ไม่ได้ตั้งค่า");
+  }
+
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 }

@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const client = getSupabaseServerClient();
+    const client = getSupabaseAdminClient();
 
     // 1. Query Total Scans & Recent Scans
     const { count: totalScans, error: scanErr } = await client
       .from("scan_history")
       .select("*", { count: "exact", head: true });
 
-    const { data: recentScansData } = await client
+    const { data: recentScansData, error: recentErr } = await client
       .from("scan_history")
       .select("id, object_name, waste_type, confidence, points_earned, created_at, user_id")
       .order("created_at", { ascending: false })
@@ -35,10 +37,11 @@ export async function GET() {
       .select("*", { count: "exact", head: true })
       .eq("status", "Pending");
 
-    // 5. Query Waste Type Breakdown
+    // 5. Query Waste Type Breakdown & Weekly Analysis
     const { data: allScans } = await client
       .from("scan_history")
-      .select("waste_type, confidence");
+      .select("waste_type, confidence, created_at")
+      .order("created_at", { ascending: false });
 
     let countRecycle = 0;
     let countGeneral = 0;
@@ -46,31 +49,61 @@ export async function GET() {
     let countHazard = 0;
     let avgConfidence = 97.6;
 
+    // Weekly distribution calculation (last 7 days)
+    const dayNames = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัส", "ศุกร์", "เสาร์"];
+    const today = new Date();
+    const last7DaysMap = new Map<string, { day: string; recycle: number; general: number; wet: number; hazard: number }>();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateKey = d.toISOString().split("T")[0];
+      const dayName = dayNames[d.getDay()];
+      last7DaysMap.set(dateKey, { day: dayName, recycle: 0, general: 0, wet: 0, hazard: 0 });
+    }
+
     if (allScans && allScans.length > 0) {
       allScans.forEach((s) => {
-        if (s.waste_type === "รีไซเคิล") countRecycle++;
-        else if (s.waste_type === "เปียก") countWet++;
-        else if (s.waste_type === "อันตราย") countHazard++;
+        const wt = s.waste_type || "ทั่วไป";
+        if (wt === "รีไซเคิล") countRecycle++;
+        else if (wt === "เปียก") countWet++;
+        else if (wt === "อันตราย") countHazard++;
         else countGeneral++;
+
+        // Add to weekly map if within range
+        if (s.created_at) {
+          const dateKey = new Date(s.created_at).toISOString().split("T")[0];
+          if (last7DaysMap.has(dateKey)) {
+            const entry = last7DaysMap.get(dateKey)!;
+            if (wt === "รีไซเคิล") entry.recycle++;
+            else if (wt === "เปียก") entry.wet++;
+            else if (wt === "อันตราย") entry.hazard++;
+            else entry.general++;
+          }
+        }
       });
+
       const confSum = allScans.reduce((sum, s) => sum + (Number(s.confidence) || 85), 0);
       avgConfidence = Math.round((confSum / allScans.length) * 10) / 10;
     }
 
-    const scansCount = totalScans ?? 0;
+    const scansCount = totalScans ?? (allScans ? allScans.length : 0);
     const usersCount = totalUsers ?? 0;
-    const co2Reduction = Math.round(scansCount * 0.24 * 10) / 10 || 0;
+    const co2Reduction = Math.round(countRecycle * 0.24 * 10) / 10 || Math.round(scansCount * 0.15 * 10) / 10;
+
+    // Get weekly array
+    const weeklyData = Array.from(last7DaysMap.values());
 
     return NextResponse.json({
       stats: {
         photos: {
           value: scansCount,
           subtitle: `บันทึกจริงจากฐานข้อมูล (${scansCount} รายการ)`,
-          change: "+100% Realtime",
+          change: "ฐานข้อมูลสด",
         },
         accuracy: {
           value: avgConfidence,
-          subtitle: "Gemini 2.5 AI Model",
+          subtitle: "Google Gemini AI",
           change: "ความแม่นยำเฉลี่ย",
         },
         locations: {
@@ -86,23 +119,24 @@ export async function GET() {
         co2Saved: {
           value: co2Reduction,
           unit: "kg CO₂e",
-          change: "คำนวณจากขยะรีไซเคิล",
+          change: "ลดก๊าซเรือนกระจก",
         },
       },
       distribution: [
-        { type: "รีไซเคิล", count: countRecycle, color: "bg-blue-500", text: "text-blue-400", bgLight: "bg-blue-950/40 border-blue-800/50" },
-        { type: "ทั่วไป", count: countGeneral, color: "bg-amber-500", text: "text-amber-400", bgLight: "bg-amber-950/40 border-amber-800/50" },
-        { type: "เปียก", count: countWet, color: "bg-emerald-500", text: "text-emerald-400", bgLight: "bg-emerald-950/40 border-emerald-800/50" },
-        { type: "อันตราย", count: countHazard, color: "bg-rose-500", text: "text-rose-400", bgLight: "bg-rose-950/40 border-rose-800/50" },
+        { type: "รีไซเคิล", count: countRecycle, color: "bg-blue-500", text: "text-blue-700", bgLight: "bg-blue-50/70 border-blue-200/70" },
+        { type: "ทั่วไป", count: countGeneral, color: "bg-amber-500", text: "text-amber-800", bgLight: "bg-amber-50/70 border-amber-200/70" },
+        { type: "เปียก", count: countWet, color: "bg-emerald-500", text: "text-emerald-800", bgLight: "bg-emerald-50/70 border-emerald-200/70" },
+        { type: "อันตราย", count: countHazard, color: "bg-rose-500", text: "text-rose-800", bgLight: "bg-rose-50/70 border-rose-200/70" },
       ],
+      weeklyData,
       recentScans: (recentScansData || []).map((s) => ({
         id: s.id,
-        time: new Date(s.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
+        time: s.created_at ? new Date(s.created_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }) : "เมื่อสักครู่",
         item: s.object_name,
         category: s.waste_type,
-        confidence: Number(s.confidence) || 90,
+        confidence: Math.round(Number(s.confidence) || 90),
         points: s.points_earned || 2,
-        user: s.user_id?.slice(0, 8) + "...",
+        user: s.user_id ? s.user_id.slice(0, 8) + "..." : "ผู้ใช้",
       })),
       pendingReports: pendingReports ?? 0,
     });

@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "../config/supabase.js";
+import { getSupabaseClient, getSupabaseAdminClient } from "../config/supabase.js";
 
 export interface ScanHistoryRecord {
   id: string;
@@ -356,7 +356,7 @@ export class StorageService {
 
   // --- Reports ---
   static async getReports(): Promise<WasteReport[]> {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdminClient() || getSupabaseClient();
     if (supabase) {
       const { data, error } = await supabase
         .from("waste_reports")
@@ -420,7 +420,7 @@ export class StorageService {
 
   // --- Admin Stats (Live from Supabase) ---
   static async getAdminStats() {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdminClient() || getSupabaseClient();
     let totalScans = localHistory.length;
     let totalUsers = 1284;
     let avgAccuracy = 97.6;

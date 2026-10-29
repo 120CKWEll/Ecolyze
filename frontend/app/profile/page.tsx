@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function ProfilePage() {
   const [username, setUsername] = useState<string>("ผู้ใช้งาน");
   const [score, setScore] = useState<number>(0);
+  const [role, setRole] = useState<string>("student");
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
@@ -17,6 +19,7 @@ export default function ProfilePage() {
       if (cached) {
         const u = JSON.parse(cached);
         if (u?.username) setUsername(u.username);
+        if (u?.role) setRole(u.role);
         if (typeof u?.score === "number") {
           setScore(u.score);
           setLoading(false);
@@ -43,6 +46,7 @@ export default function ProfilePage() {
           if (isMounted) {
             setUsername(user.username || "ผู้ใช้งาน");
             setScore(user.score || 0);
+            setRole(user.role || "student");
             setLoading(false);
           }
           localStorage.setItem("user", JSON.stringify(user));
@@ -96,6 +100,34 @@ export default function ProfilePage() {
   return (
     <div className="max-w-3xl mx-auto animate-fade-in pb-10">
       <h1 className="text-3xl md:text-4xl font-extrabold mb-6 text-slate-900 tracking-tight">👤 บัญชีของฉัน</h1>
+
+      {/* Admin Panel Access Banner */}
+      {role === "admin" && (
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-5 md:p-6 text-white shadow-lg shadow-purple-600/20 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shrink-0">
+              🛡️
+            </div>
+            <div>
+              <h3 className="font-black text-base md:text-lg flex items-center gap-2">
+                คุณมีสิทธิ์ผู้ดูแลระบบ (Admin)
+                <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                  Super Admin
+                </span>
+              </h3>
+              <p className="text-xs text-purple-100 mt-0.5">
+                ศูนย์ควบคุม KKU Green Control จัดการรายงาน ถังขยะ ผู้ใช้ และสถิติ
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin"
+            className="w-full sm:w-auto text-center bg-white text-purple-700 hover:bg-purple-50 px-5 py-2.5 rounded-xl text-xs font-black shadow-md transition active:scale-95"
+          >
+            เปิดหน้าแอดมิน →
+          </Link>
+        </div>
+      )}
       
       {/* การ์ดโปรไฟล์ */}
       <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80 mb-8 flex flex-col sm:flex-row items-center gap-6 md:gap-8 relative overflow-hidden">
@@ -106,8 +138,15 @@ export default function ProfilePage() {
         <div className="text-center sm:text-left">
           <h2 className="text-2xl font-extrabold text-slate-900 mb-1">{username}</h2>
           <p className="text-slate-600 mb-3 font-semibold text-sm">มหาวิทยาลัยขอนแก่น (KKU Green Campus)</p>
-          <div className={`inline-flex items-center gap-2 bg-gradient-to-r ${badgeStyle} px-4 py-1.5 rounded-full text-xs md:text-sm shadow-sm`}>
-            {currentTier}
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+            <div className={`inline-flex items-center gap-2 bg-gradient-to-r ${badgeStyle} px-4 py-1.5 rounded-full text-xs md:text-sm shadow-sm`}>
+              {currentTier}
+            </div>
+            {role === "admin" && (
+              <span className="bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1 rounded-full text-xs font-bold">
+                🛡️ Admin
+              </span>
+            )}
           </div>
         </div>
       </div>

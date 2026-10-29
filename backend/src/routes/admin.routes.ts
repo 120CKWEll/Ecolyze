@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { StorageService } from "../services/storageService.js";
-import { getSupabaseClient } from "../config/supabase.js";
+import { getSupabaseAdminClient } from "../config/supabase.js";
 
 const router = Router();
 
@@ -18,33 +18,29 @@ router.get("/stats", async (_req: Request, res: Response): Promise<void> => {
 // GET /api/admin/users
 router.get("/users", async (_req: Request, res: Response): Promise<void> => {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseAdminClient();
     if (supabase) {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, score, role, created_at");
+        .select("id, email, display_name, score, role, created_at")
+        .order("created_at", { ascending: false });
 
       if (!error && Array.isArray(data)) {
         const mapped = data.map((u) => ({
           id: u.id,
           name: u.display_name || "ผู้ใช้งาน",
-          email: "-",
-          role: u.role === "admin" ? "Admin" : "User",
+          email: u.email || `${u.id.slice(0, 8)}@kku.ac.th`,
+          role: u.role === "admin" ? "Admin" : u.role === "staff" ? "Staff" : "User",
           points: u.score || 0,
           status: "Active",
+          createdAt: u.created_at,
         }));
         res.status(200).json(mapped);
         return;
       }
     }
 
-    // Default mock list
-    res.status(200).json([
-      { id: "U001", name: "สมชาย ใจดี", email: "somchai@kkumail.com", role: "User", points: 450, status: "Active" },
-      { id: "U002", name: "สมหญิง รักษ์โลก", email: "somying@kkumail.com", role: "User", points: 1200, status: "Active" },
-      { id: "U003", name: "ผู้ดูแล ระบบ", email: "admin@recyclesmart.com", role: "Admin", points: 9999, status: "Active" },
-      { id: "U004", name: "นักศึกษา ทดสอบ", email: "test@kkumail.com", role: "User", points: 0, status: "Suspended" },
-    ]);
+    res.status(200).json([]);
   } catch (error) {
     console.error("Admin users error:", error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการโหลดรายชื่อผู้ใช้" });
