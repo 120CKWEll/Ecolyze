@@ -140,6 +140,34 @@ function getManeuverIcon(maneuver: { type?: string; modifier?: string }): string
 export default function MapPage() {
   const [wastePoints, setWastePoints] = useState<WastePoint[]>(INITIAL_WASTE_POINTS);
   const [selectedPoint, setSelectedPoint] = useState<WastePoint | null>(null);
+
+  // โหลดจุดทิ้งขยะจริงจากฐานข้อมูล Supabase
+  useEffect(() => {
+    const fetchDbLocations = async () => {
+      try {
+        const res = await fetch("/api/admin/locations");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped: WastePoint[] = data
+              .filter((d: any) => d.status !== "Maintenance")
+              .map((d: any) => ({
+                id: Number(d.id),
+                name: d.name,
+                lat: Number(d.lat),
+                lng: Number(d.lng),
+                type: Array.isArray(d.types) ? d.types : Array.isArray(d.type) ? d.type : ["รีไซเคิล", "ทั่วไป"],
+                description: d.description || "",
+              }));
+            if (mapped.length > 0) setWastePoints(mapped);
+          }
+        }
+      } catch {
+        // fallback to INITIAL_WASTE_POINTS
+      }
+    };
+    fetchDbLocations();
+  }, []);
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;

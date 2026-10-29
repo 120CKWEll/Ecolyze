@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import LogoutButton from "./LogoutButton";
@@ -6,6 +7,21 @@ import FloatingChat from "./FloatingChat";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("user");
+      if (cached) {
+        const u = JSON.parse(cached);
+        if (u?.role === "admin") {
+          setIsAdmin(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [pathname]);
 
   // กำหนดหน้าเว็บที่ไม่ต้องการให้แสดงแถบเมนู
   const hideLayoutPages = ["/login", "/register"];
@@ -39,8 +55,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="text-xl font-black text-emerald-700 flex items-center gap-2">
           ♻️ RecycleSmart
         </div>
-        <div className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-lg shadow-sm border border-emerald-300">
-          🧑‍🎓
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="bg-purple-100 text-purple-800 border border-purple-200 text-xs px-2.5 py-1 rounded-full font-bold"
+            >
+              🛡️ Admin
+            </Link>
+          )}
+          <Link
+            href="/profile"
+            className="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center text-lg shadow-sm border border-emerald-300"
+          >
+            🧑‍🎓
+          </Link>
         </div>
       </header>
 
@@ -50,7 +79,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           ♻️ RecycleSmart
         </div>
         
-        <nav className="flex flex-col gap-2 flex-1">
+        <nav className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar pr-1">
           <Link href="/" className={navClass("/")}>
             <span className="text-xl group-hover:scale-110 transition-transform">🏠</span> หน้าหลัก
           </Link>
@@ -78,6 +107,17 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           <Link href="/guide" className={navClass("/guide")}>
             <span className="text-xl group-hover:scale-110 transition-transform">📖</span> คู่มือแยกขยะ
           </Link>
+
+          {isAdmin && (
+            <div className="pt-2 mt-2 border-t border-slate-100">
+              <Link
+                href="/admin"
+                className="p-3 rounded-2xl transition font-bold text-sm flex items-center gap-3 bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100/80 shadow-xs"
+              >
+                <span className="text-xl">🛡️</span> แดชบอร์ดแอดมิน
+              </Link>
+            </div>
+          )}
         </nav>
         
         <LogoutButton />
@@ -115,10 +155,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <Link href="/rewards" className={bottomNavClass("/rewards")}>
           <span className="text-2xl mb-0.5">🎁</span>
           <span className="text-[11px] font-bold">รางวัล</span>
-        </Link>
-        <Link href="/game" className={bottomNavClass("/game")}>
-          <span className="text-2xl mb-0.5">🎮</span>
-          <span className="text-[11px] font-bold">เกม</span>
         </Link>
         <Link href="/profile" className={bottomNavClass("/profile")}>
           <span className="text-2xl mb-0.5">👤</span>

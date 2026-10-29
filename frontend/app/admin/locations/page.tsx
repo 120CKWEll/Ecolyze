@@ -9,31 +9,32 @@ interface WasteLocation {
   type?: string[];
   types?: string[];
   description: string;
-  status: "Active" | "Maintenance";
+  status: "Active" | "Maintenance" | string;
 }
 
 export default function AdminLocationsPage() {
-  const [locations, setLocations] = useState<WasteLocation[]>([
-    { id: 1, name: "ศูนย์อาหารคอมเพล็กซ์", lat: 16.4744, lng: 102.8231, type: ["รีไซเคิล", "ขยะเปียก", "ทั่วไป"], description: "จุดคัดแยกขยะหลัก บริเวณทางเข้าและในโรงอาหาร", status: "Active" },
-    { id: 2, name: "คณะวิศวกรรมศาสตร์", lat: 16.4755, lng: 102.8195, type: ["รีไซเคิล", "E-Waste"], description: "จุดรับขยะอิเล็กทรอนิกส์และรีไซเคิล ใกล้ตึก EN", status: "Active" },
-    { id: 3, name: "หอสมุดกลาง (ศูนย์สื่อการเรียนรู้)", lat: 16.4715, lng: 102.8235, type: ["รีไซเคิล", "อันตราย"], description: "จุดรับถ่านไฟฉาย ขยะอิเล็กทรอนิกส์ และกระดาษ", status: "Maintenance" },
-    { id: 4, name: "คณะวิทยาศาสตร์ (SC06)", lat: 16.4735, lng: 102.8205, type: ["รีไซเคิล", "ทั่วไป"], description: "ถังขยะแยกประเภทบริเวณใต้อาคาร", status: "Active" },
-    { id: 5, name: "กองจัดการสาธารณูปโภคพลังงานและสิ่งแวดล้อม", lat: 16.4862, lng: 102.8276, type: ["รีไซเคิล", "อันตราย", "ทั่วไป"], description: "หน่วยงานหลักดูแลการจัดการขยะของ มข.", status: "Active" },
-  ]);
+  const [locations, setLocations] = useState<WasteLocation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newLocName, setNewLocName] = useState("");
-  const [newLat, setNewLat] = useState("16.4730");
-  const [newLng, setNewLng] = useState("102.8230");
-  const [newDesc, setNewDesc] = useState("");
+  // Add / Edit Modal
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [locName, setLocName] = useState("");
+  const [lat, setLat] = useState("16.4730");
+  const [lng, setLng] = useState("102.8230");
+  const [desc, setDesc] = useState("");
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(["รีไซเคิล", "ทั่วไป"]);
+  const [saving, setSaving] = useState(false);
+
+  const availableTypes = ["รีไซเคิล", "ทั่วไป", "เปียก", "อันตราย", "E-Waste"];
 
   const fetchLocations = async () => {
+    setLoading(true);
     try {
-      let res = await fetch("/api/admin/locations");
-      if (!res.ok) res = await fetch("http://localhost:5000/api/locations");
+      const res = await fetch("/api/admin/locations");
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const normalized: WasteLocation[] = data.map((d: any) => ({
             id: Number(d.id),
             name: d.name,
@@ -47,8 +48,10 @@ export default function AdminLocationsPage() {
           setLocations(normalized);
         }
       }
-    } catch {
-      // keep fallback
+    } catch (err) {
+      console.warn("Fetch locations error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,43 +59,73 @@ export default function AdminLocationsPage() {
     fetchLocations();
   }, []);
 
-  const handleAddLocation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newLocName.trim()) return;
+  const openAddModal = () => {
+    setEditingId(null);
+    setLocName("");
+    setLat("16.4740");
+    setLng("102.8230");
+    setDesc("");
+    setSelectedTypes(["รีไซเคิล", "ทั่วไป"]);
+    setShowModal(true);
+  };
 
+  const openEditModal = (loc: WasteLocation) => {
+    setEditingId(loc.id);
+    setLocName(loc.name);
+    setLat(String(loc.lat));
+    setLng(String(loc.lng));
+    setDesc(loc.description);
+    setSelectedTypes(loc.types || loc.type || ["รีไซเคิล", "ทั่วไป"]);
+    setShowModal(true);
+  };
+
+  const handleSaveLocation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locName.trim()) return;
+
+    setSaving(true);
     const payload = {
-      name: newLocName.trim(),
-      lat: parseFloat(newLat) || 16.473,
-      lng: parseFloat(newLng) || 102.823,
-      types: ["รีไซเคิล", "ทั่วไป"],
-      description: newDesc.trim() || "จุดคัดแยกขยะมาตรฐาน มข.",
+      name: locName.trim(),
+      lat: parseFloat(lat) || 16.473,
+      lng: parseFloat(lng) || 102.823,
+      types: selectedTypes.length > 0 ? selectedTypes : ["รีไซเคิล", "ทั่วไป"],
+      description: desc.trim() || "จุดคัดแยกขยะมาตรฐาน มข.",
       status: "Active",
     };
 
     try {
-      let res = await fetch("/api/admin/locations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const result = await res.json();
-        if (result.location) {
-          setLocations((prev) => [result.location, ...prev]);
-        } else {
+      if (editingId) {
+        // Update existing
+        const res = await fetch("/api/admin/locations", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingId, ...payload }),
+        });
+        if (res.ok) {
           fetchLocations();
+          setShowModal(false);
+        } else {
+          alert("อัปเดตจุดทิ้งขยะไม่สำเร็จ");
         }
       } else {
-        fetchLocations();
+        // Create new
+        const res = await fetch("/api/admin/locations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          fetchLocations();
+          setShowModal(false);
+        } else {
+          alert("เพิ่มจุดทิ้งขยะไม่สำเร็จ");
+        }
       }
     } catch {
-      fetchLocations();
+      alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    } finally {
+      setSaving(false);
     }
-
-    setShowAddModal(false);
-    setNewLocName("");
-    setNewDesc("");
   };
 
   const toggleStatus = async (id: number) => {
@@ -111,7 +144,29 @@ export default function AdminLocationsPage() {
       });
     } catch (err) {
       console.warn("Toggle location err:", err);
+      fetchLocations();
     }
+  };
+
+  const deleteLocation = async (id: number, name: string) => {
+    if (!confirm(`คุณต้องการลบจุดทิ้งขยะ "${name}" หรือไม่?`)) return;
+
+    setLocations((prev) => prev.filter((l) => l.id !== id));
+
+    try {
+      const res = await fetch(`/api/admin/locations?id=${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) fetchLocations();
+    } catch {
+      fetchLocations();
+    }
+  };
+
+  const toggleType = (t: string) => {
+    setSelectedTypes((prev) =>
+      prev.includes(t) ? prev.filter((item) => item !== t) : [...prev, t]
+    );
   };
 
   return (
@@ -127,7 +182,7 @@ export default function AdminLocationsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 transition active:scale-95 self-start sm:self-auto cursor-pointer"
         >
           <span>➕</span> เพิ่มจุดทิ้งใหม่
@@ -135,94 +190,118 @@ export default function AdminLocationsPage() {
       </div>
 
       {/* Grid of Locations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {locations.map((loc) => (
-          <div
-            key={loc.id}
-            className="bg-white border border-slate-200/80 rounded-2xl p-5 hover:border-emerald-300 hover:shadow-md transition flex flex-col justify-between shadow-sm"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-xl shrink-0">
-                    🗑️
+      {loading ? (
+        <div className="py-20 text-center text-slate-500 text-xs">
+          <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          กำลังโหลดจุดทิ้งขยะจากฐานข้อมูล...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {locations.map((loc) => (
+            <div
+              key={loc.id}
+              className="bg-white border border-slate-200/80 rounded-2xl p-5 hover:border-emerald-300 hover:shadow-md transition flex flex-col justify-between shadow-sm"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center text-xl shrink-0">
+                      🗑️
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base">{loc.name}</h3>
+                      <p className="text-[11px] font-mono text-slate-400 mt-0.5">
+                        Lat: {loc.lat} | Lng: {loc.lng}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">{loc.name}</h3>
-                    <p className="text-[11px] font-mono text-slate-400 mt-0.5">
-                      Lat: {loc.lat} | Lng: {loc.lng}
-                    </p>
-                  </div>
+
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
+                      loc.status === "Active"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}
+                  >
+                    {loc.status === "Active" ? "🟢 เปิดใช้งาน" : "🛠️ ปิดปรับปรุง"}
+                  </span>
                 </div>
 
-                <span
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
-                    loc.status === "Active"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
-                >
-                  {loc.status === "Active" ? "🟢 เปิดใช้งาน" : "🛠️ ปิดปรับปรุง"}
-                </span>
+                <p className="text-xs text-slate-600 mb-4">{loc.description}</p>
+
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {(loc.type || loc.types || []).map((t, i) => (
+                    <span
+                      key={i}
+                      className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
 
-              <p className="text-xs text-slate-600 mb-4">{loc.description}</p>
-
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {(loc.type || loc.types || []).map((t, i) => (
-                  <span
-                    key={i}
-                    className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200"
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => toggleStatus(loc.id)}
+                    className="text-slate-500 hover:text-slate-800 font-bold transition cursor-pointer"
                   >
-                    {t}
-                  </span>
-                ))}
+                    สลับสถานะ
+                  </button>
+                  <button
+                    onClick={() => openEditModal(loc)}
+                    className="text-emerald-700 hover:text-emerald-900 font-bold transition cursor-pointer"
+                  >
+                    ✏️ แก้ไข
+                  </button>
+                  <button
+                    onClick={() => deleteLocation(loc.id, loc.name)}
+                    className="text-rose-500 hover:text-rose-700 font-bold transition cursor-pointer"
+                  >
+                    🗑️ ลบ
+                  </button>
+                </div>
+
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-emerald-600 hover:text-emerald-700 hover:underline font-bold"
+                >
+                  เปิด Google Maps ↗
+                </a>
               </div>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <button
-                onClick={() => toggleStatus(loc.id)}
-                className="text-slate-500 hover:text-slate-800 font-bold transition cursor-pointer"
-              >
-                สลับสถานะ (เปิด/ปิด)
-              </button>
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-emerald-600 hover:text-emerald-700 hover:underline font-bold"
-              >
-                ดูบน Google Maps ↗
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      {/* Add / Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-white border border-slate-200 rounded-3xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">📍 เพิ่มจุดทิ้งขยะใหม่</h3>
+              <h3 className="text-lg font-bold text-slate-900">
+                {editingId ? "✏️ แก้ไขจุดทิ้งขยะ" : "📍 เพิ่มจุดทิ้งขยะใหม่"}
+              </h3>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => setShowModal(false)}
                 className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleAddLocation} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveLocation} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">ชื่อสถานที่ / อาคาร</label>
                 <input
                   type="text"
                   required
                   placeholder="เช่น โรงอาหารคณะศึกษาศาสตร์"
-                  value={newLocName}
-                  onChange={(e) => setNewLocName(e.target.value)}
+                  value={locName}
+                  onChange={(e) => setLocName(e.target.value)}
                   className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
@@ -232,19 +311,47 @@ export default function AdminLocationsPage() {
                   <label className="block font-bold text-slate-700 mb-1">ละติจูด (Lat)</label>
                   <input
                     type="text"
-                    value={newLat}
-                    onChange={(e) => setNewLat(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                    value={lat}
+                    onChange={(e) => setLat(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono"
                   />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">ลองจิจูด (Lng)</label>
                   <input
                     type="text"
-                    value={newLng}
-                    onChange={(e) => setNewLng(e.target.value)}
-                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                    required
+                    value={lng}
+                    onChange={(e) => setLng(e.target.value)}
+                    className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-mono"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1.5">
+                  ประเภทขยะที่รองรับในจุดนี้
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableTypes.map((t) => {
+                    const isSelected = selectedTypes.includes(t);
+                    return (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => toggleType(t)}
+                        className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                          isSelected
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {isSelected ? "✓ " : "+ "}
+                        {t}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -252,9 +359,9 @@ export default function AdminLocationsPage() {
                 <label className="block font-bold text-slate-700 mb-1">คำอธิบายจุดตั้งถัง</label>
                 <textarea
                   rows={2}
-                  placeholder="เช่น บริเวณบันไดทางขึ้นชั้น 1"
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
+                  placeholder="เช่น บริเวณบันไดทางขึ้นชั้น 1 ใกล้ประตูทางออก"
+                  value={desc}
+                  onChange={(e) => setDesc(e.target.value)}
                   className="w-full bg-slate-50 text-slate-900 border border-slate-200 p-3 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                 />
               </div>
@@ -262,16 +369,17 @@ export default function AdminLocationsPage() {
               <div className="pt-3 flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => setShowModal(false)}
                   className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200/80 transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-md shadow-emerald-600/20 cursor-pointer"
+                  disabled={saving}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
                 >
-                  บันทึกข้อมูล
+                  {saving ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
                 </button>
               </div>
             </form>

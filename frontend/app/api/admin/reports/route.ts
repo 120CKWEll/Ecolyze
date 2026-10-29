@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/admin/reports
 export async function GET() {
   try {
-    const client = getSupabaseServerClient();
+    const client = getSupabaseAdminClient();
     const { data, error } = await client
       .from("waste_reports")
       .select("*")
@@ -29,7 +31,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Missing id or status" }, { status: 400 });
     }
 
-    const client = getSupabaseServerClient();
+    const client = getSupabaseAdminClient();
     const { data, error } = await client
       .from("waste_reports")
       .update({ status })
@@ -51,15 +53,16 @@ export async function PUT(req: NextRequest) {
 // POST /api/admin/reports (Create report)
 export async function POST(req: NextRequest) {
   try {
-    const { location_name, report_type, description } = await req.json();
+    const { location_name, report_type, description, user_id } = await req.json();
     if (!location_name || !report_type) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const client = getSupabaseServerClient();
+    const client = getSupabaseAdminClient();
     const { data, error } = await client
       .from("waste_reports")
       .insert({
+        user_id: user_id || null,
         location_name,
         report_type,
         description: description || "",
@@ -76,5 +79,27 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Create report error:", error);
     return NextResponse.json({ error: "สร้างรายงานล้มเหลว" }, { status: 500 });
+  }
+}
+
+// DELETE /api/admin/reports
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const client = getSupabaseAdminClient();
+    const { error } = await client.from("waste_reports").delete().eq("id", id);
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: "ลบรายงานสำเร็จ" });
+  } catch (error) {
+    console.error("Delete report error:", error);
+    return NextResponse.json({ error: "ลบรายงานล้มเหลว" }, { status: 500 });
   }
 }
